@@ -1,10 +1,12 @@
-#include<iostream>
-#include<ctime> 
-#include<vector>
+#include <iostream>
+#include <ctime>
+#include <vector>
+#include <limits>
+#include <algorithm> // Added for find_if
 
 using namespace std;
 
-static int count = 0;
+static int bookingCount = 0; // Renamed from count to bookingCount
 
 class Person {
 protected:
@@ -29,16 +31,26 @@ public:
 class Customer : public Person {
 public:
     Customer() {
-        cin.ignore();
-        cout << "Enter name: ";
-        getline(cin, name);
-        cout << "Enter phone number: ";
-        getline(cin, phone);
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        do {
+            cout << "Enter name (letters only): ";
+            getline(cin, name);
+        } while (name.empty());
+
+        do {
+            cout << "Enter phone number (numbers only): ";
+            getline(cin, phone);
+        } while (!isNumber(phone));
     }
 
     void getInfo() override {
         cout << "Customer Name: " << name << endl;
         cout << "Customer Phone: " << phone << endl;
+    }
+
+private:
+    bool isNumber(const string& s) {
+        return !s.empty() && find_if(s.begin(), s.end(), [](char c) { return !isdigit(c); }) == s.end();
     }
 };
 
@@ -46,20 +58,25 @@ class Room : public Customer {
     string roomNo;
     int slotNo, bookingNo, billNo, charges;
     time_t checkInTime, checkOutTime;
+
 public:
     void getBooking(int slot) {
         slotNo = slot;
-        cout << "Enter room number: ";
-        getline(cin, roomNo);
+        do {
+            cout << "Enter room number (numbers only): ";
+            getline(cin, roomNo);
+        } while (!isValidRoomNumber(roomNo));
+
         checkInTime = time(0);
-        count++;
+        bookingCount++; // Renamed from count to bookingCount
         string t = ctime(&checkInTime);
-        bookingNo = count;
+        bookingNo = bookingCount; // Renamed from count to bookingCount
         system("cls"); // To clear the screen in Visual C++, utilize the code
         displayBooking();
     }
+
     void displayBooking() {
-        cout << "******** XYZ HOTEL BOOKING RECEIPT ********";
+        cout << "*** IT08 HOTEL BOOKING RECEIPT ***";
         cout << "\n\nBooking number: " << bookingNo;
         cout << "\nRoom Number: " << roomNo;
         cout << "\nCheck-in Time: " << ctime(&checkInTime);
@@ -69,43 +86,59 @@ public:
         char c = getchar();
         system("cls");
     }
+
     void getBill() {
         checkOutTime = time(0);
         billNo = bookingNo;
         calculateCharges();
     }
+
     int getBookingNo() {
         return bookingNo;
     }
+
     int getSlot() {
         return slotNo;
     }
+
     void calculateCharges() {
         long long duration = checkOutTime - checkInTime;
         int mins = duration / 60;
         int hours = mins / 60;
         int extra_min = mins % 60;
         if (hours == 0 && extra_min <= 30)
-            charges = 200;
+            charges = 50000;
         else if (hours <= 2 && extra_min == 0)
-            charges = 550;
+            charges = 150000;
         else if (hours <= 7)
-            charges = 550 + (hours - 2) * 100;
+            charges = 150000 + (hours - 2) * 50000;
         else
-            charges = 1650;
+            charges = 500000;
         displayBill();
     }
+
     void displayBill() {
-        cout << "******** XYZ HOTEL BILL ********";
+        cout << "*** IT08 HOTEL BILL ***";
         cout << "\n\nBill Number: " << billNo;
         cout << "\nRoom Number: " << roomNo;
         cout << "\nRoom Slot: " << slotNo;
         cout << "\nCheck-in Time: " << ctime(&checkInTime);
         cout << "\nCheck-out Time: " << ctime(&checkOutTime);
-        cout << "\nTotal Charges: Rs. " << charges << "/-";
+        cout << "\nTotal Charges: Rp. " << charges << "/-";
         cout << "\nCurrent Status: PAID";
         cout << "\n\nEnter any key to go back to main menu..";
         char c = getchar();
+    }
+
+private:
+    bool isValidRoomNumber(const string& s) {
+        if (!isNumber(s)) return false;
+        int roomNumber = stoi(s);
+        return roomNumber >= 1 && roomNumber <= 100;
+    }
+
+    bool isNumber(const string& s) {
+        return !s.empty() && find_if(s.begin(), s.end(), [](char c) { return !isdigit(c); }) == s.end();
     }
 };
 
@@ -114,6 +147,7 @@ class Hotel {
     int totalFilled;
     vector<bool> roomSlots;
     vector<Room> rooms;
+
 public:
     Hotel() {
         capacity = 100;
@@ -121,15 +155,14 @@ public:
         for (int i = 0; i < capacity; ++i)
             roomSlots.push_back(false);
     }
+
     bool ifRoomAvailable() {
-        if (totalFilled == capacity)
-            return false;
-        else
-            return true;
+        return totalFilled < capacity;
     }
+
     int getFreeRoom() {
         for (int i = 0; i < capacity; ++i) {
-            if (roomSlots[i] == false) {
+            if (!roomSlots[i]) {
                 roomSlots[i] = true;
                 totalFilled++;
                 return i + 1;
@@ -137,37 +170,44 @@ public:
         }
         return -1;
     }
+
     void newRoom(Room& x) {
         rooms.push_back(x);
     }
+
     void deleteRoom(int slot) {
         roomSlots[slot - 1] = false;
         totalFilled--;
     }
-    Room findDepartingRoom(int t) // t = booking number
+
+    Room* findDepartingRoom(int t) // t = booking number
     {
         for (int i = 0; i < rooms.size(); ++i) {
             int s = rooms[i].getBookingNo();
             if (t == s)
-                return rooms[i];
+                return &rooms[i];
         }
-        return rooms[0];
+        return nullptr;
     }
+
     int getCapacity() {
         return capacity;
     }
+
     int getTotalFilled() {
         return totalFilled;
     }
+
     void emptyRoomList() {
         for (int i = 0; i < roomSlots.size(); ++i) {
-            if (roomSlots[i] == false)
+            if (!roomSlots[i])
                 cout << i + 1 << ", ";
         }
     }
+
     void occupiedRoomList() {
         for (int i = 0; i < roomSlots.size(); ++i) {
-            if (roomSlots[i] == true)
+            if (roomSlots[i])
                 cout << i + 1 << ", ";
         }
     }
@@ -188,12 +228,23 @@ void roomCheckIn(Hotel& h) {
 void roomCheckOut(Hotel& h) {
     int bookingNo;
     cout << "Enter booking number: ";
-    cin >> bookingNo;
-    cin.ignore();
-    Room curr = h.findDepartingRoom(bookingNo);
-    h.deleteRoom(curr.getSlot());
-    system("cls");
-    curr.getBill();
+    while (!(cin >> bookingNo) || bookingNo < 1 || bookingNo > 100) {
+        cout << "Invalid input. Enter booking number (1-100): ";
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    }
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    Room* curr = h.findDepartingRoom(bookingNo);
+    if (curr != nullptr) {
+        h.deleteRoom(curr->getSlot());
+        system("cls");
+        curr->getBill();
+    } else {
+        cout << "Booking number does not exist.\n";
+        cout << "\nEnter any key to return to main menu..";
+        char c = getchar();
+        system("cls");
+    }
 }
 
 void displayDetails(Hotel& h) {
@@ -237,7 +288,7 @@ void displayDetails(Hotel& h) {
         h.occupiedRoomList();
         break;
     case 6:
-        cout << "\nThe total number of bookings: " << count;
+        cout << "\nThe total number of bookings: " << bookingCount; // Renamed from count to bookingCount
         break;
     case 7:
         break;
@@ -245,15 +296,15 @@ void displayDetails(Hotel& h) {
     cin.ignore();
     cout << "\nEnter any key to return to main menu..";
     char ch = getchar();
+    system("cls");
 }
 
 int main() {
     Hotel h;
     int choice;
     do {
-        system("cls");
-        cout << "********* HOTEL MANAGEMENT SYSTEM *********";
-        cout << "\n\n1. Check-in";
+        cout << "\n*** IT08 HOTEL MANAGEMENT SYSTEM ***";
+        cout << "\n1. Check-in";
         cout << "\n2. Check-out";
         cout << "\n3. Display details";
         cout << "\n4. Exit";
@@ -279,4 +330,3 @@ int main() {
     } while (true);
     return 0;
 }
-
