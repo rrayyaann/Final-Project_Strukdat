@@ -2,11 +2,11 @@
 #include <ctime>
 #include <vector>
 #include <limits>
-#include <algorithm> // Added for find_if
+#include <algorithm> 
 
 using namespace std;
 
-static int bookingCount = 0; // Renamed from count to bookingCount
+static int bookingCount = 0;
 
 class Person {
 protected:
@@ -68,10 +68,10 @@ public:
         } while (!isValidRoomNumber(roomNo));
 
         checkInTime = time(0);
-        bookingCount++; // Renamed from count to bookingCount
+        bookingCount++; 
         string t = ctime(&checkInTime);
-        bookingNo = bookingCount; // Renamed from count to bookingCount
-        system("cls"); // To clear the screen in Visual C++, utilize the code
+        bookingNo = bookingCount; 
+        system("cls"); 
         displayBooking();
     }
 
@@ -180,7 +180,7 @@ public:
         totalFilled--;
     }
 
-    Room* findDepartingRoom(int t) // t = booking number
+    Room* findDepartingRoom(int t)
     {
         for (int i = 0; i < rooms.size(); ++i) {
             int s = rooms[i].getBookingNo();
@@ -288,8 +288,7 @@ void displayDetails(Hotel& h) {
         h.occupiedRoomList();
         break;
     case 6:
-        cout << "\nThe total number of bookings: " << bookingCount; // Renamed from count to bookingCount
-        break;
+        cout << "\nThe total number of bookings: " << bookingCount;
     case 7:
         break;
     }
